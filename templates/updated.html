@@ -2,13 +2,17 @@
 
 {% block content %}
 
-  <h1>Updated Buggy</h1>
+<h1>{{ header }}</h1>
 
   <p>
     {{ msg }}
   </p>
   <p>
+    <br>
     <a href="/" class="button">home</a>
+    <form>
+      <input class="button" type="button" value="go back" onclick="history.back()">
+    </form>
   </p>
 
 {% endblock %}

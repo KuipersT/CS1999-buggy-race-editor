@@ -1,5 +1,10 @@
 from flask import Flask, render_template, request, jsonify
 import sqlite3 as sql
+import os
+
+#### Set FLASK_ENV variable to development mode.
+os.environ['FLASK_ENV'] = 'development'
+
 
 # app - The flask application where all the magical things are configured.
 app = Flask(__name__)
@@ -26,23 +31,43 @@ def create_buggy():
     if request.method == 'GET':
         return render_template("buggy-form.html")
     elif request.method == 'POST':
+        header = "Buggy updated!"
         msg=""
-        qty_wheels = request.form['qty_wheels']
+        qty_wheels = request.form['qty_wheels'].strip()
+        flag_color = request.form['flag_color'].strip()
+        flag_color_secondary = request.form['flag_color_secondary'].strip()
+        flag_pattern = request.form['flag_pattern'].strip()
         try:
             with sql.connect(DATABASE_FILE) as con:
+                if not qty_wheels.isdigit():
+                    raise ValueError("Wheel quantity must be a number!")
+                elif len(flag_color) > 20:
+                    raise ValueError("Primary flag colour must be less than 20 characters!")
+                elif len(flag_color_secondary) > 20:
+                    raise ValueError("Secondary flag colour must be less than 20 characters!")
+                elif len(flag_pattern) > 20:
+                    raise ValueError("Flag pattern must be less than 20 characters!")
+
                 cur = con.cursor()
                 cur.execute(
-                    "UPDATE buggies set qty_wheels=? WHERE id=?",
-                    (qty_wheels, DEFAULT_BUGGY_ID)
+                    """UPDATE buggies SET qty_wheels=?,
+                                        flag_color=?,
+                                        flag_color_secondary=?,
+                                        flag_pattern=? WHERE id=?""",
+                    (qty_wheels, flag_color, flag_color_secondary, flag_pattern, DEFAULT_BUGGY_ID)
                 )
                 con.commit()
-                msg = "Record successfully saved"
+                msg = "Record successfully saved."
+        except ValueError as e:
+            header = "Validation error!"
+            msg = str(e)
         except:
             con.rollback()
-            msg = "error in update operation"
+            header = "SQL error!"
+            msg = "Error in update operation."
         finally:
             con.close()
-        return render_template("updated.html", msg = msg)
+        return render_template("updated.html", header = header, msg = msg)
 
 #------------------------------------------------------------
 # a page for displaying the buggy
@@ -85,4 +110,4 @@ def summary():
 
 # You shouldn't need to add anything below this!
 if __name__ == '__main__':
-    app.run(debug = True, host="0.0.0.0")
+    app.run(debug = True, host="0.0.0.0", port=21999)
